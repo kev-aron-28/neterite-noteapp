@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:neterite/features/Todo/repo/todo_repo.dart';
 
 class NeteriteTodoTile extends StatefulWidget {
   final String title;
   final String subtitle;
+  final String id;
 
-  const NeteriteTodoTile({
+  NeteriteTodoTile({
     super.key,
+    required this.id,
     required this.title,
     required this.subtitle,
   });
@@ -17,11 +20,14 @@ class NeteriteTodoTile extends StatefulWidget {
 class _NeteriteTodoTileState extends State<NeteriteTodoTile> {
   bool isChecked = false; // Controla el estado del checkbox
 
+  InMemoryTodoRepository repo = InMemoryTodoRepository();
+
+
   void _handleCheckboxChanged(bool? value) {
     setState(() {
       isChecked = value ?? false; // Cambia el estado
+      repo.update(widget.id, isCompleted: true);
     });
-    print("CHECK BOX CHANGED to $isChecked");
   }
 
   @override

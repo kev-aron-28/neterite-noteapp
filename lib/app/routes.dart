@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:neterite/features/Calendar/screens/calendar_screen.dart';
 import 'package:neterite/features/Lobby/screens/lobby_screen.dart';
 import 'package:neterite/features/Notebook/screens/notebook_screen.dart';
+import 'package:neterite/features/Todo/screens/todo_screen.dart';
 // Import other screens here
 
 class Routes {
@@ -13,17 +15,15 @@ class Routes {
     switch (settings.name) {
       case notes:
         return MaterialPageRoute(
-          builder: (_) => const NotebookScreen(),
+          builder: (_) => NotebookScreen(),
         );
       case calendar:
-        return MaterialPageRoute(
-          builder: (_) => const Scaffold(body: Center(child: Text('Calendar Page'))),
-        );
+        return MaterialPageRoute(builder: (_) => const CalendarScreen());
       case lobby:
         return MaterialPageRoute(builder: (_) => const LobbyScreen());
       case todo:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(body: Center(child: Text('To-Do Page'))),
+          builder: (_) => const ToDoScreen()
         );
       default:
         return MaterialPageRoute(

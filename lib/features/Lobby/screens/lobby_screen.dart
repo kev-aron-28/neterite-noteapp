@@ -1,36 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Importar intl para el formateo de fechas
 import 'package:neterite/common/widgets/neterite_bottom_navigator.dart';
 import 'package:neterite/features/Lobby/widgets/neterite_card_note.dart';
 import 'package:neterite/features/Lobby/widgets/neterite_schedule_tile.dart';
 import 'package:neterite/features/Lobby/widgets/neterite_todo_tile.dart';
+import 'package:neterite/features/Calendar/repo/event_repo.dart'; // Importar el repositorio de eventos
+import 'package:neterite/features/Calendar/model/event_model.dart'; // Importar el modelo de eventos
+import 'package:neterite/features/Todo/models/todo_model.dart';
+import 'package:neterite/features/Todo/repo/todo_repo.dart'; // Importar el modelo de tareas
 
-class LobbyScreen extends StatelessWidget {
+class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key});
 
   @override
+  _LobbyScreenState createState() => _LobbyScreenState();
+}
+
+class _LobbyScreenState extends State<LobbyScreen> {
+  late InMemoryEventRepository _eventRepository;
+  late InMemoryTodoRepository _taskRepository;
+  List<EventModel> _todayEvents = [];
+  List<TodoModel> _thisWeekTasks = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _eventRepository = InMemoryEventRepository(); // Instanciamos el repositorio de eventos
+    _taskRepository = InMemoryTodoRepository(); // Instanciamos el repositorio de tareas
+    _loadData();
+  }
+
+  // Cargar los eventos de hoy y las tareas de esta semana
+  Future<void> _loadData() async {
+    // Obtener todos los eventos y tareas
+    List<EventModel> allEvents = await _eventRepository.getEvents();
+    List<TodoModel> allTasks = await _taskRepository.getAll();
+
+    // Filtrar los eventos de hoy (asegurándote de que solo se obtienen los eventos de la fecha actual)
+    DateTime now = DateTime.now();
+    List<EventModel> events = allEvents.where((event) {
+      DateTime eventDate = event.eventDate; // Suponiendo que el modelo de evento tiene una propiedad 'eventDate'
+      return eventDate.year == now.year && eventDate.month == now.month && eventDate.day == now.day;
+    }).toList();
+
+    // Filtrar las tareas de esta semana
+    List<TodoModel> tasks = allTasks.where((task) {
+      DateTime taskDueDate = task.date; // Suponiendo que el modelo de tarea tiene una propiedad 'date'
+      DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Primer día de la semana (lunes)
+      DateTime endOfWeek = startOfWeek.add(Duration(days: 6)); // Último día de la semana (domingo)
+
+      return taskDueDate.isBefore(endOfWeek.add(Duration(days: 1))); // Tareas dentro de la semana
+    }).toList();
+
+    setState(() {
+      _todayEvents = events;
+      _thisWeekTasks = tasks;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Crear el formato de fecha
+    var dateFormat = DateFormat('dd/MM/yyyy');
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20), // Adjust as needed
+          padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Search Bar
               Center(
                 child: Padding(
-                padding: const EdgeInsets.only(top: 30),
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.95,
-                  child: const SearchBar(
-                    leading: Icon(Icons.search),
-                    hintText: "Buscar nota",
+                  padding: const EdgeInsets.only(top: 30),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.95,
+                    child: const SearchBar(
+                      leading: Icon(Icons.search),
+                      hintText: "Buscar nota",
+                    ),
                   ),
                 ),
               ),
-              ),
               const SizedBox(height: 25),
-              
+
               // Últimas Notas Section
               const Padding(
                 padding: EdgeInsets.only(left: 10),
@@ -56,7 +110,7 @@ class LobbyScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Horario Section
               const Padding(
                 padding: EdgeInsets.only(left: 10),
@@ -69,11 +123,11 @@ class LobbyScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const Row(
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: 10),
-                  RotatedBox(
+                  const SizedBox(width: 10),
+                  const RotatedBox(
                     quarterTurns: 9, // Rotate "HOY" vertically
                     child: Text(
                       "HOY",
@@ -84,21 +138,25 @@ class LobbyScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 20),
+                  const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        NeteriteScheduleTile(title: "Hey there", subtitle: "No"),
-                        NeteriteScheduleTile(title: "New tile", subtitle: "Hey there"),
-                        NeteriteScheduleTile(title: "New tile", subtitle: "tile"),
-                        NeteriteScheduleTile(title: "New tile", subtitle: "tile"),
+                        // Mostrar los eventos de hoy
+                        for (var event in _todayEvents)
+                          NeteriteScheduleTile(
+                            title: event.title,
+                            subtitle: dateFormat.format(event.eventDate), // Formatear la fecha del evento
+                          ),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
+
+              // TO DO Section
               const Padding(
                 padding: EdgeInsets.only(left: 10),
                 child: Text(
@@ -110,12 +168,12 @@ class LobbyScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const Row(
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: 10),
-                  RotatedBox(
-                    quarterTurns: 9, // Rotate "HOY" vertically
+                  const SizedBox(width: 10),
+                  const RotatedBox(
+                    quarterTurns: 9, // Rotate "ESTA SEMANA" vertically
                     child: Text(
                       "ESTA SEMANA",
                       style: TextStyle(
@@ -125,18 +183,23 @@ class LobbyScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 20),
+                  const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        NeteriteTodoTile(title: "Hi", subtitle: "Hello"),
-                        NeteriteTodoTile(title: "Hi", subtitle: "Hello")
+                        // Mostrar las tareas de esta semana
+                        for (var task in _thisWeekTasks)
+                          NeteriteTodoTile(
+                            id: task.id,
+                            title: task.title,
+                            subtitle: dateFormat.format(task.date), // Formatear la fecha de la tarea
+                          ),
                       ],
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
