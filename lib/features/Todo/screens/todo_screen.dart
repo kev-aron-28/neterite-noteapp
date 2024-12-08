@@ -184,8 +184,9 @@ class _ToDoScreenState extends State<ToDoScreen> {
             task.title,
             style: TextStyle(
               decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-            ),
+            )            
           ),
+          subtitle: Text('Materia: ${task.subject ?? "No asignada"}'),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

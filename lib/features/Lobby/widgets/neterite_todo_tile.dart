@@ -5,9 +5,11 @@ class NeteriteTodoTile extends StatefulWidget {
   final String title;
   final String subtitle;
   final String id;
+  final bool isChecked;  // Recibe si la tarea está completada o no
 
   NeteriteTodoTile({
     super.key,
+    required this.isChecked,
     required this.id,
     required this.title,
     required this.subtitle,
@@ -18,15 +20,21 @@ class NeteriteTodoTile extends StatefulWidget {
 }
 
 class _NeteriteTodoTileState extends State<NeteriteTodoTile> {
-  bool isChecked = false; // Controla el estado del checkbox
+  late bool isChecked;  // Controla el estado del checkbox, se inicializa con el valor pasado
 
-  InMemoryTodoRepository repo = InMemoryTodoRepository();
+  final InMemoryTodoRepository repo = InMemoryTodoRepository();
 
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa el estado del checkbox con el valor que se pasa
+    isChecked = widget.isChecked;
+  }
 
   void _handleCheckboxChanged(bool? value) {
     setState(() {
-      isChecked = value ?? false; // Cambia el estado
-      repo.update(widget.id, isCompleted: true);
+      isChecked = value ?? false;  // Cambia el estado del checkbox
+      repo.update(widget.id, isCompleted: isChecked);  // Actualiza el repositorio con el nuevo estado
     });
   }
 

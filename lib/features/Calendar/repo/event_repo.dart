@@ -34,7 +34,6 @@ class InMemoryEventRepository {
     }
   }
 
-  @override
   Future<void> deleteEvent(String id) async {
     // Eliminar un evento por su id
     _events.removeWhere((event) => event.id == id);

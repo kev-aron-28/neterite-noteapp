@@ -6,6 +6,8 @@ import 'package:neterite/features/Lobby/widgets/neterite_schedule_tile.dart';
 import 'package:neterite/features/Lobby/widgets/neterite_todo_tile.dart';
 import 'package:neterite/features/Calendar/repo/event_repo.dart'; // Importar el repositorio de eventos
 import 'package:neterite/features/Calendar/model/event_model.dart'; // Importar el modelo de eventos
+import 'package:neterite/features/Notebook/models/canva_model.dart';
+import 'package:neterite/features/Notebook/repo/notebook_repo.dart';
 import 'package:neterite/features/Todo/models/todo_model.dart';
 import 'package:neterite/features/Todo/repo/todo_repo.dart'; // Importar el modelo de tareas
 
@@ -19,8 +21,10 @@ class LobbyScreen extends StatefulWidget {
 class _LobbyScreenState extends State<LobbyScreen> {
   late InMemoryEventRepository _eventRepository;
   late InMemoryTodoRepository _taskRepository;
+  late InMemoryCanvasRepository canvasRepository = InMemoryCanvasRepository();
   List<EventModel> _todayEvents = [];
   List<TodoModel> _thisWeekTasks = [];
+  List<CanvasModel> _canvas = [];
 
   @override
   void initState() {
@@ -35,6 +39,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     // Obtener todos los eventos y tareas
     List<EventModel> allEvents = await _eventRepository.getEvents();
     List<TodoModel> allTasks = await _taskRepository.getAll();
+    _canvas = canvasRepository.getAllCanvas();
 
     // Filtrar los eventos de hoy (asegurándote de que solo se obtienen los eventos de la fecha actual)
     DateTime now = DateTime.now();
@@ -70,19 +75,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 30),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.95,
-                    child: const SearchBar(
-                      leading: Icon(Icons.search),
-                      hintText: "Buscar nota",
-                    ),
-                  ),
-                ),
-              ),
               const SizedBox(height: 25),
 
               // Últimas Notas Section
@@ -98,20 +90,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              const SingleChildScrollView(
+              SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    SizedBox(width: 10),
-                    NeteriteCardNote(noteTitle: "This is a note"),
-                    NeteriteCardNote(noteTitle: "Another note"),
-                    NeteriteCardNote(noteTitle: "More note"),
+                    for (var note in _canvas)
+                      NeteriteCardNote(noteTitle: note.name, noteId: note.id),
+
                   ],
-                ),
+                )
               ),
               const SizedBox(height: 20),
-
-              // Horario Section
               const Padding(
                 padding: EdgeInsets.only(left: 10),
                 child: Text(
@@ -191,6 +180,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         // Mostrar las tareas de esta semana
                         for (var task in _thisWeekTasks)
                           NeteriteTodoTile(
+                            isChecked: task.isCompleted,
                             id: task.id,
                             title: task.title,
                             subtitle: dateFormat.format(task.date), // Formatear la fecha de la tarea

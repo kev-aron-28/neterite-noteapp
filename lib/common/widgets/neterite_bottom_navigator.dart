@@ -22,6 +22,9 @@ class NeteriteBottomNavigator extends StatelessWidget {
       case 3:
         Navigator.pushReplacementNamed(context, '/todo');
         break;
+      case 4:
+        Navigator.pushReplacementNamed(context, '/subject');
+        break;
     }
   }
 
@@ -32,19 +35,23 @@ class NeteriteBottomNavigator extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.note),
-          label: 'notes',
+          label: 'Notas',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.calendar_month),
-          label: 'calendar',
+          label: 'Eventos',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.home),  // Changed to group icon for clarity
-          label: 'lobby',
+          label: 'Lobby',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.list),  // Changed to group icon for clarity
-          label: 'todo',
+          label: 'ToDo',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.school),  // Changed to group icon for clarity
+          label: 'Materias',
         )
       ],
       type: BottomNavigationBarType.fixed,

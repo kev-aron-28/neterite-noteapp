@@ -4,12 +4,19 @@ import 'dart:ui';
 import 'package:neterite/features/Notebook/models/canva_model.dart';
 import 'package:neterite/features/Notebook/repo/notebook_repo.dart';
 
-class InfiniteCanvasPage extends StatefulWidget {
+class InfiniteCanvasUpdatePage extends StatefulWidget {
+
+  final String canvasId;
+
+  const InfiniteCanvasUpdatePage({ Key? key, required this.canvasId });
+
   @override
   _InfiniteCanvasPageState createState() => _InfiniteCanvasPageState();
 }
 
-class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
+class _InfiniteCanvasPageState extends State<InfiniteCanvasUpdatePage> {
+  final InMemoryCanvasRepository canvas = InMemoryCanvasRepository();
+  
   List<List<DrawingPoint>> allPoints = [];
   List<DrawingPoint> currentPoints = [];
   List<TextBox> textBoxes = [];
@@ -31,13 +38,26 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
 
   String canvasName = "Apunte sin nombre";
 
-  String id = DateTime.now().millisecondsSinceEpoch.toString();
-
   InMemoryCanvasRepository repository = InMemoryCanvasRepository();
+
+  void _loadCanvas() {
+    final canvas = repository.getCanvas(widget.canvasId);
+
+    if(canvas == null) {
+      throw Exception('Canvas not found');
+    }
+
+    allPoints = canvas.drawingPoints;
+    canvasName = canvas.name;
+    textBoxes = canvas.textBoxes;
+    allSquares = canvas.squares;
+  }
 
   @override
   void initState() {
     super.initState();
+
+    _loadCanvas();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showCanvasNameDialog();
@@ -100,8 +120,8 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
         title: Text(canvasName),
         actions: [
           IconButton(onPressed: () {
-            repository.saveCanvas(CanvasModel(
-              id: id, 
+            repository.updateCanvas(widget.canvasId, CanvasModel(
+              id: widget.canvasId, 
               name: canvasName, 
               drawingPoints: allPoints, 
               textBoxes: textBoxes, 
