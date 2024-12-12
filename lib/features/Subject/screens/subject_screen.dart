@@ -18,15 +18,23 @@ class SubjectState extends State<SubjectScreen> {
   List<Subject> _filteredSubjects = [];
   bool _isLoading = true;
 
+  // Controlador para el campo de búsqueda
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _fetchSubjects();
+
+    // Escuchar cambios en el campo de búsqueda
+    _searchController.addListener(() {
+      _filterSubjects(_searchController.text);
+    });
   }
 
-  _fetchSubjects() {
+  _fetchSubjects() async {
     try {
-      final subjects = _repository.getAllSubjects();
+      final subjects = await _repository.getAllSubjects(); // Asegúrate de que sea async si tu repositorio lo requiere
       setState(() {
         _subjects = subjects;
         _filteredSubjects = subjects;
@@ -43,12 +51,65 @@ class SubjectState extends State<SubjectScreen> {
   }
 
   void _filterSubjects(String query) {
+    // Verifica si la consulta no está vacía
+    if (query.isEmpty) {
+      setState(() {
+        _filteredSubjects = _subjects;
+      });
+      return;
+    }
+
     setState(() {
+      // Filtra las materias por nombre que coincidan con la consulta
       _filteredSubjects = _subjects
           .where((subject) =>
               subject.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
+  }
+
+  Future<void> deleteSubject(String id) async {
+    try {
+      _repository.deleteSubject(id);
+      setState(() {
+        _subjects.removeWhere((subject) => subject.id == id);
+        _filteredSubjects.removeWhere((subject) => subject.id == id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Materia eliminada correctamente')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al eliminar la materia')),
+      );
+    }
+  }
+
+  void _showDeleteConfirmation(String id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmación'),
+          content: const Text('¿Está seguro de que desea eliminar esta materia?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                deleteSubject(id);
+              },
+              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -60,12 +121,28 @@ class SubjectState extends State<SubjectScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 30),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.95,
-                    child: const SearchBar(
-                      leading: Icon(Icons.search),
-                      hintText: "Buscar materias",
-                    ),
+                  child: Column(
+                    children: [
+                      // Título de la sección
+                      Text(
+                        'Materias',
+                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                            ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.95,
+                        child: TextField(
+                          controller: _searchController, // Vincula el controlador
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.search),
+                            hintText: "Buscar materias",
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -75,8 +152,8 @@ class SubjectState extends State<SubjectScreen> {
             ),
       bottomNavigationBar: const NeteriteBottomNavigator(currentIndex: 4),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => CreateSubjectScreen(), // Cambia según tu pantalla
@@ -102,10 +179,15 @@ class SubjectState extends State<SubjectScreen> {
         return ListTile(
           title: Text(subject.name),
           subtitle: Text(subject.teacher),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _showDeleteConfirmation(subject.id),
+          ),
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => UpdateSubjectScreen(subjectId: subject.id))
+              MaterialPageRoute(
+                  builder: (_) => UpdateSubjectScreen(subjectId: subject.id)),
             );
           },
         );

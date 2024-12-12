@@ -75,6 +75,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Logo en la parte superior centrado
+              Center(
+                child: Image.asset(
+                  'assets/images/logo.png', // Ruta de la imagen
+                  width: 130, // Tamaño del logo
+                  height: 130, // Tamaño del logo
+                ),
+              ),
               const SizedBox(height: 25),
 
               // Últimas Notas Section
@@ -96,9 +104,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   children: [
                     for (var note in _canvas)
                       NeteriteCardNote(noteTitle: note.name, noteId: note.id),
-
                   ],
-                )
+                ),
               ),
               const SizedBox(height: 20),
               const Padding(

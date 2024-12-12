@@ -4,7 +4,6 @@ import 'package:neterite/features/Lobby/screens/lobby_screen.dart';
 import 'package:neterite/features/Notebook/screens/notebook_screen.dart';
 import 'package:neterite/features/Subject/screens/subject_screen.dart';
 import 'package:neterite/features/Todo/screens/todo_screen.dart';
-// Import other screens here
 
 class Routes {
   static const String notes = '/notes';

@@ -53,6 +53,8 @@ class _ToDoCreateScreenState extends State<ToDoCreateScreen> {
         return;
       }
 
+      print(_selectedSubjectId);
+
       // Creating the task model to be saved
       final newTask = TodoModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),  // Generate a unique ID

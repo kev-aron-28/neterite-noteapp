@@ -1,3 +1,4 @@
+import 'package:neterite/features/Subject/model/subject_model.dart';
 import 'package:neterite/features/Todo/models/todo_model.dart';
 
 class InMemoryTodoRepository {
@@ -32,7 +33,7 @@ class InMemoryTodoRepository {
   }
 
   // Actualizar una tarea
-  bool update(String id, {String? title, bool? isCompleted, DateTime? date}) {
+  bool update(String id, {String? title, bool? isCompleted, DateTime? date, String? subject}) {
     final task = _tasks[id];
     if (task != null) {
       if (title != null) {
@@ -44,6 +45,11 @@ class InMemoryTodoRepository {
       if (date != null) {
         task.date = date;
       }
+
+      if(subject != null) {
+        task.subject = subject;
+      }
+      
       return true;
     }
     return false;

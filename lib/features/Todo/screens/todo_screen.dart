@@ -3,6 +3,7 @@ import 'package:neterite/common/widgets/neterite_bottom_navigator.dart';
 import 'package:neterite/features/Todo/models/todo_model.dart';
 import 'package:neterite/features/Todo/repo/todo_repo.dart';
 import 'package:neterite/features/Todo/screens/todo_new_screen.dart';
+import 'package:neterite/features/Todo/screens/todo_update_screen.dart';
 
 class ToDoScreen extends StatefulWidget {
   const ToDoScreen({super.key});
@@ -17,23 +18,53 @@ class _ToDoScreenState extends State<ToDoScreen> {
   // Instancia del repositorio
   final InMemoryTodoRepository _repository = InMemoryTodoRepository();
 
+  // Controlador para la barra de búsqueda
+  final TextEditingController _searchController = TextEditingController();
+
   // Obtener tareas para un día específico
   List<TodoModel> _getTasksForDay(DateTime day) {
-  final tasks = _repository.getAll(); // Assuming getAll() returns List<TodoModel>
-  
-  return tasks.where((task) {
-    return task.date.year == day.year &&
-           task.date.month == day.month &&
-           task.date.day == day.day;
-  }).toList();
-}
+    final tasks =
+        _repository.getAll(); // Assuming getAll() returns List<TodoModel>
+    return tasks.where((task) {
+      return task.date.year == day.year &&
+          task.date.month == day.month &&
+          task.date.day == day.day;
+    }).toList();
+  }
 
-
-  // Eliminar una tarea
-  void _deleteTask(TodoModel task) {
-    setState(() {
-      _repository.delete(task.id);
-    });
+  // Confirmar eliminación de una tarea
+  void _confirmDeleteTask(TodoModel task) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar Tarea'),
+          content: const Text(
+              '¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el modal
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _repository.delete(task.id);
+                });
+                Navigator.of(context)
+                    .pop(); // Cierra el modal después de confirmar
+              },
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Cambiar la fecha de una tarea
@@ -56,31 +87,50 @@ class _ToDoScreenState extends State<ToDoScreen> {
     }
   }
 
+  // Filtrar tareas por título basado en la barra de búsqueda
+  List<TodoModel> _filterTasks(List<TodoModel> tasks) {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      return tasks;
+    }
+    return tasks.where((task) {
+      return task.title.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final todayTasks = _getTasksForDay(_selectedDay);
-    final tomorrowTasks = _getTasksForDay(_selectedDay.add(const Duration(days: 1)));
+    final tomorrowTasks =
+        _getTasksForDay(_selectedDay.add(const Duration(days: 1)));
+
+    // Filtrar tareas por búsqueda
+    final filteredTodayTasks = _filterTasks(todayTasks);
+    final filteredTomorrowTasks = _filterTasks(tomorrowTasks);
 
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
+            // Título de la pantalla
             Padding(
               padding: const EdgeInsets.only(top: 30),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.95,
-                child: const SearchBar(
-                  leading: Icon(Icons.search),
-                  hintText: "Buscar tarea",
-                ),
+              child: Text(
+                'Tareas',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
+            const SizedBox(height: 15),
+            // Barra de búsqueda,
             const SizedBox(height: 15),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(7, (index) {
-                final day = _selectedDay.add(Duration(days: index - _selectedDay.weekday + 1));
+                final day = _selectedDay
+                    .add(Duration(days: index - _selectedDay.weekday + 1));
                 final isSelected = _selectedDay.day == day.day;
 
                 return GestureDetector(
@@ -98,7 +148,15 @@ class _ToDoScreenState extends State<ToDoScreen> {
                     child: Column(
                       children: [
                         Text(
-                          ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][day.weekday - 1],
+                          [
+                            'Lun',
+                            'Mar',
+                            'Mié',
+                            'Jue',
+                            'Vie',
+                            'Sáb',
+                            'Dom'
+                          ][day.weekday - 1],
                           style: TextStyle(
                             color: isSelected ? Colors.white : Colors.black,
                             fontWeight: FontWeight.bold,
@@ -124,15 +182,17 @@ class _ToDoScreenState extends State<ToDoScreen> {
                   children: [
                     Text(
                       'Tareas de hoy (${_selectedDay.toLocal().toIso8601String().split("T").first}):',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    _buildTaskList(todayTasks),
+                    _buildTaskList(filteredTodayTasks),
                     const SizedBox(height: 20),
                     Text(
                       'Tareas de mañana (${_selectedDay.add(const Duration(days: 1)).toLocal().toIso8601String().split("T").first}):',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    _buildTaskList(tomorrowTasks),
+                    _buildTaskList(filteredTomorrowTasks),
                   ],
                 ),
               ),
@@ -180,11 +240,19 @@ class _ToDoScreenState extends State<ToDoScreen> {
               });
             },
           ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UpdateTodoScreen(id: task.id),
+              ),
+            );
+          },
           title: Text(
             task.title,
             style: TextStyle(
               decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-            )            
+            ),
           ),
           subtitle: Text('Materia: ${task.subject ?? "No asignada"}'),
           trailing: Row(
@@ -199,7 +267,7 @@ class _ToDoScreenState extends State<ToDoScreen> {
               IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () {
-                  _deleteTask(task);
+                  _confirmDeleteTask(task);
                 },
               ),
             ],

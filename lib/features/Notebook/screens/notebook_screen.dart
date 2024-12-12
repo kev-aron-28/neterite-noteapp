@@ -14,12 +14,31 @@ class NotebookScreen extends StatefulWidget {
 
 class _NotebookScreenState extends State<NotebookScreen> {
   final InMemoryCanvasRepository repository = InMemoryCanvasRepository();
+  TextEditingController searchController = TextEditingController();
+  String searchQuery = '';
+
+  List<CanvasModel> canvases = [];
+
+  Future<void> _loadEvents() async {
+    List<CanvasModel> canvas = await repository.getAllCanvas();
+    if (searchQuery.isNotEmpty) {
+      canvas = canvas.where((event) =>
+          event.name.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+    }
+
+    setState(() {
+      canvases = canvas;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Obtener la lista de canvas del repositorio
-    final List<CanvasModel> canvases = repository.getAllCanvas();
-
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -27,14 +46,32 @@ class _NotebookScreenState extends State<NotebookScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Título
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: Center(
+                  child: Text(
+                    'Notas',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+              ),
               // Barra de búsqueda
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 30),
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.95,
-                    child: const SearchBar(
-                      leading: Icon(Icons.search),
+              Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.95,
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (query) {
+                      setState(() {
+                        searchQuery = query;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
                       hintText: "Buscar canvas",
                     ),
                   ),
@@ -45,7 +82,7 @@ class _NotebookScreenState extends State<NotebookScreen> {
               // Lista de canvas
               ListView.builder(
                 shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(), // Evita conflictos con SingleChildScrollView
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: canvases.length,
                 itemBuilder: (context, index) {
                   final canvas = canvases[index];
@@ -59,14 +96,18 @@ class _NotebookScreenState extends State<NotebookScreen> {
                       },
                     ),
                     hoverColor: Colors.blue,
-                    onTap: () {
-                      // Redirige a la vista del canvas
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => InfiniteCanvasUpdatePage(canvasId: canvas.id),
+                          builder: (context) =>
+                              InfiniteCanvasUpdatePage(canvasId: canvas.id),
                         ),
                       );
+
+                      setState(() {
+                        _loadEvents();
+                      });
                     },
                   );
                 },
@@ -76,12 +117,15 @@ class _NotebookScreenState extends State<NotebookScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Redirige a la página de creación de canvas
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => InfiniteCanvasPage()),
           );
+
+          setState(() {
+            _loadEvents();
+          });
         },
         child: const Icon(Icons.add),
         tooltip: 'Crear Canvas',
@@ -91,7 +135,6 @@ class _NotebookScreenState extends State<NotebookScreen> {
   }
 
   void _deleteCanvas(String canvasId) {
-    // Mostrar un cuadro de diálogo de confirmación
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -107,9 +150,9 @@ class _NotebookScreenState extends State<NotebookScreen> {
           TextButton(
             onPressed: () {
               repository.deleteCanvas(canvasId);
-
-              setState(() {});
-
+              setState(() {
+                _loadEvents();
+              });
               Navigator.of(context).pop();
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
